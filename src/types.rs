@@ -550,6 +550,13 @@ impl SetPropertyData {
     }
 }
 
+#[derive(Debug, Serialize)]
+pub struct SetTarget {
+    #[serde(rename = "type")]
+    pub request_type: String,
+    pub value: Vector3<f64>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Geometry {
     pub uuid: Uuid,
@@ -699,6 +706,19 @@ impl Meshcat {
             [data.request_type.as_bytes(), data.path.as_bytes(), &buf],
             0,
         )?;
+        let message = self.socket.recv_string(0)?;
+        info!("Received reply {} {}", 0, message.unwrap());
+        Ok(())
+    }
+
+    pub fn set_target(&self, target: Vector3<f64>) -> Result<(), Box<dyn Error>> {
+        let data = SetTarget {
+            value: target,
+            request_type: "set_target".to_string(),
+        };
+        let buf = rmp_serde::encode::to_vec_named(&data)?;
+        self.socket
+            .send_multipart([data.request_type.as_bytes(), b"", &buf], 0)?;
         let message = self.socket.recv_string(0)?;
         info!("Received reply {} {}", 0, message.unwrap());
         Ok(())
